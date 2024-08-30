@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Visualization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 5px;
+        }
+        button, select {
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .array-container {
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: nowrap;
+        }
+        .array-element {
+            display: inline-block;
+            width: 30px;
+            text-align: center;
+            margin: 2px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            background-color: #f4f4f4;
+        }
+        .highlight {
+            background-color: lightcoral;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sorting Visualization</h1>
+    <p>Insira o tamanho do vetor:</p>
+    <input type="number" id="arraySize" min="1">
+    
+    <p>Escolha o método de ordenação:</p>
+    <select id="sortMethod">
+        <option value="shell">Shellsort</option>
+        <option value="bubble">Bubble Sort</option>
+    </select>
+
+    <button onclick="generateAndSort()">Gerar e Ordenar</button>
+
+    <div class="results">
+        <h2>Resultados:</h2>
+        <p id="originalArray"></p>
+        <p id="sortedArray"></p>
+        <p id="timeElapsed"></p>
+        <p id="interactionCount"></p>
+    </div>
+
+    <div class="array-container" id="arrayDisplay"></div>
+
+    <script>
+        let interactionCount = 0;
+
+        // Gera um vetor com valores aleatórios
+        function generateRandomArray(size) {
+            return Array.from({ length: size }, () => Math.floor(Math.random() * 100));
+        }
+
+        // Atualiza a exibição do vetor
+        function updateDisplay(array, highlightIndexes) {
+            let container = document.getElementById('arrayDisplay');
+            container.innerHTML = '';
+
+            array.forEach((value, index) => {
+                let element = document.createElement('div');
+                element.className = 'array-element';
+                if (highlightIndexes.includes(index)) {
+                    element.classList.add('highlight');
+                }
+                element.textContent = value;
+                container.appendChild(element);
+            });
+        }
+
+        // Função para realizar o Shellsort com atualizações em tempo real
+        async function shellSort(array) {
+            let n = array.length;
+            let startTime = performance.now();
+            let count = 0;
+
+            for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+                for (let i = gap; i < n; i++) {
+                    let temp = array[i];
+                    let j = i;
+
+                    while (j >= gap && array[j - gap] > temp) {
+                        array[j] = array[j - gap];
+                        j -= gap;
+                        count++;
+
+                        // Atualiza a exibição e aguarda o navegador renderizar
+                        updateDisplay(array, [j, j + gap]);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+
+                    array[j] = temp;
+                    updateDisplay(array, [j, i]);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            let endTime = performance.now();
+            return { array, time: endTime - startTime, count };
+        }
+
+        // Função para realizar o Bubble Sort com atualizações em tempo real
+        async function bubbleSort(array) {
+            let n = array.length;
+            let startTime = performance.now();
+            let count = 0;
+
+            for (let i = 0; i < n - 1; i++) {
+                for (let j = 0; j < n - 1 - i; j++) {
+                    if (array[j] > array[j + 1]) {
+                        // Troca os elementos
+                        [array[j], array[j + 1]] = [array[j + 1], array[j]];
+                        count++;
+
+                        // Atualiza a exibição e aguarda o navegador renderizar
+                        updateDisplay(array, [j, j + 1]);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+            }
+
+            let endTime = performance.now();
+            return { array, time: endTime - startTime, count };
+        }
+
+        // Gera e ordena o vetor com visualização
+        async function generateAndSort() {
+            let size = parseInt(document.getElementById('arraySize').value, 10);
+            if (isNaN(size) || size <= 0) {
+                alert('Por favor, insira um tamanho válido para o vetor.');
+                return;
+            }
+
+            // Gera o vetor e exibe
+            let array = generateRandomArray(size);
+            document.getElementById('originalArray').textContent = 'Array original: ' + array.join(', ');
+            updateDisplay(array, []); // Exibe o array original
+
+            // Espera um momento para que o usuário possa ver o array original
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Obtém o método de ordenação selecionado
+            let method = document.getElementById('sortMethod').value;
+            let result;
+
+            if (method === 'shell') {
+                result = await shellSort(array);
+            } else if (method === 'bubble') {
+                result = await bubbleSort(array);
+            }
+
+            // Exibe o array ordenado, tempo e contagem de interações
+            document.getElementById('sortedArray').textContent = 'Array ordenado: ' + result.array.join(', ');
+            document.getElementById('timeElapsed').textContent = 'Tempo gasto: ' + result.time.toFixed(2) + ' ms';
+            document.getElementById('interactionCount').textContent = 'Contador de interações: ' + result.count;
+        }
+    </script>
+</body>
+</html>
